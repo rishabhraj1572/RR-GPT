@@ -34,6 +34,28 @@
 
 ---
 
+## ☁️ Image Upload Setup (Cloudinary)  
+
+This app supports **Cloudinary unsigned upload** to handle images captured or selected before sending to GPT API.  
+
+### 1️⃣ Create Free Cloudinary Account  
+👉 [Sign up here](https://cloudinary.com/users/register/free)  
+
+### 2️⃣ Create an Unsigned Upload Preset  
+- Go to your **Cloudinary Dashboard** → **Settings** → **Upload**.  
+- Scroll down to **Upload Presets**.  
+- Click **Add Upload Preset**.  
+- Set:  
+  - **Signing Mode** → `Unsigned`  
+  - **Upload Folder** → `ml_default`
+
+### 3️⃣ Configure App  
+In `Settings Dialog` inside the app:  
+- Enter your **Cloudinary Cloud Name** (In the Dashboard)  
+- Now, when you capture or attach an image, it will upload to Cloudinary before being sent to GPT API.  
+
+---
+
 ## 🎯 Use Cases
 - Personal AI Assistant  
 - Quick Note-Taking with GPT  
