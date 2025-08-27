@@ -2,6 +2,7 @@ package com.rrgpt
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -12,12 +13,14 @@ import android.os.ParcelFileDescriptor
 import android.util.Base64
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Spinner
@@ -68,6 +71,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var attachmentsRecycler: RecyclerView
     private lateinit var previewView: PreviewView
     private lateinit var cameraContainer: FrameLayout
+    private lateinit var emptyState: LinearLayout
 
     // ===== Chat data =====
     private lateinit var chatAdapter: ChatAdapter
@@ -160,7 +164,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -195,6 +198,7 @@ class MainActivity : AppCompatActivity() {
         attachmentsRecycler = findViewById(R.id.attachmentsRecycler)
         previewView = findViewById(R.id.previewView)
         cameraContainer = findViewById(R.id.cameraContainer)
+        emptyState=findViewById(R.id.emptyState)
 
         // Chat list
         chatAdapter = ChatAdapter(messages, markwon)
@@ -206,6 +210,7 @@ class MainActivity : AppCompatActivity() {
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         previewAdapter = AttachmentPreviewAdapter(attachedImagesP, { _, position ->
             attachedImages.removeAt(position)
+            attachedImagesP.removeAt(position)
             previewAdapter.notifyItemRemoved(position)
             updateAttachmentsVisibility()
             updateSendEnabled()
@@ -241,12 +246,15 @@ class MainActivity : AppCompatActivity() {
                 chatAdapter.notifyItemInserted(messages.size - 1)
                 chatRecyclerView.scrollToPosition(messages.size - 1)
 
+                updateEmptyState()
+
                 apiMessagesForModel.add(buildUserMessageForApi(text, imagesForThisTurn))
 
                 saveChatHistory()
 
                 etMessage.text.clear()
                 attachedImages.clear()
+                attachedImagesP.clear()
                 previewAdapter.notifyDataSetChanged()
                 updateAttachmentsVisibility()
                 updateSendEnabled()
@@ -264,6 +272,11 @@ class MainActivity : AppCompatActivity() {
 
         // Camera UI toggle
         btnCamera.setOnClickListener {
+            val view = this.currentFocus
+            if (view != null) {
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(view.windowToken, 0)
+            }
             if (cameraContainer.isVisible) {
                 closeCameraUI()
             } else {
@@ -510,10 +523,21 @@ class MainActivity : AppCompatActivity() {
                     // Use the original photo file without compression
                     val savedUri = Uri.fromFile(photoFile)
 
-                    attachedImages.add(savedUri)
-                    previewAdapter.notifyItemInserted(attachedImages.size - 1)
-                    updateAttachmentsVisibility()
-                    updateSendEnabled()
+//                    attachedImages.add(savedUri)
+                    uploadToCloudinary(savedUri) { url ->
+                        if (url != null) {
+                            attachedImages.add(Uri.parse(url)) // ✅ Cloudinary ka HTTPS URL
+                            attachedImagesP.add(Uri.parse(savedUri.toString()))
+                            previewAdapter.notifyItemInserted(attachedImages.size - 1)
+                            updateAttachmentsVisibility()
+                            updateSendEnabled()
+                        } else {
+                            Toast.makeText(this@MainActivity, "Image upload failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+//                    previewAdapter.notifyItemInserted(attachedImages.size - 1)
+//                    updateAttachmentsVisibility()
+//                    updateSendEnabled()
 
                     closeCameraUI(afterCapture = true)
                 }
@@ -880,6 +904,8 @@ class MainActivity : AppCompatActivity() {
         updateAttachmentsVisibility()
         updateSendEnabled()
         rebuildApiMessagesFromChat()
+
+        updateEmptyState()
     }
 
     private fun rebuildApiMessagesFromChat() {
@@ -926,7 +952,10 @@ class MainActivity : AppCompatActivity() {
         getSharedPreferences(CHAT_PREFS, MODE_PRIVATE).edit().remove(KEY_MESSAGES_JSON).apply()
         addSystemMessageOnce(DEFAULT_SYSTEM_PROMPT)
 
+        updateEmptyState()
+
         Toast.makeText(this, "Chat cleared", Toast.LENGTH_SHORT).show()
+
     }
 
     // ===== Save on app background =====
@@ -1022,6 +1051,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         processPage(0)
+    }
+
+    private fun updateEmptyState() {
+        if (chatAdapter.itemCount == 0) {
+            emptyState.visibility = View.VISIBLE
+            chatRecyclerView.visibility = View.GONE
+        } else {
+            emptyState.visibility = View.GONE
+            chatRecyclerView.visibility = View.VISIBLE
+        }
     }
 
 
