@@ -24,7 +24,7 @@
 ## 🖼️ Screenshots  
 
 <p align="center">
-  <img src="https://github.com/rishabhraj1572/RR-GPT/blob/master/Screenshots/1.png?raw=true" alt="Chat Screen" width="250"/>
+  <img src="https://github.com/rishabhraj1572/RR-GPT/blob/master/Screenshots/0.png?raw=true" alt="Chat Screen" width="250"/>
   <img src="https://github.com/rishabhraj1572/RR-GPT/blob/master/Screenshots/2.png?raw=true" alt="Multiple Images" width="250"/>
   <img src="https://github.com/rishabhraj1572/RR-GPT/blob/master/Screenshots/3.png?raw=true" alt="Chat with Image" width="250"/>
   <img src="https://github.com/rishabhraj1572/RR-GPT/blob/master/Screenshots/4.png?raw=true" alt="Code" width="250"/>
